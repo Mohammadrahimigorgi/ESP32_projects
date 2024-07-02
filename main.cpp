@@ -1,55 +1,40 @@
-/*********
-  Rui Santos
-  Complete project details at https://randomnerdtutorials.com  
-*********/
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_AHTX0.h>
 
-#include <Arduino.h>
 
-#define timeSeconds 5
+#define SEALEVELPRESSURE_HPA (1013.25)
 
-// Set GPIOs for LED and PIR Motion Sensor
-const int led = 27;
-const int motionSensor = 14;
+Adafruit_AHTX0 aht; // I2C
+//Adafruit_BME280 bme(BME_CS); // hardware SPI
+//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
 
-// Timer: Auxiliary variables
-unsigned long now = millis();
-unsigned long lastTrigger = 0;
-boolean startTimer = false;
-boolean motion = false;
-
-// Checks if motion was detected, sets LED HIGH and starts a timer
-void IRAM_ATTR detectsMovement() {
-  digitalWrite(led, LOW);
-  startTimer = true;
-  lastTrigger = millis();
-}
+unsigned long delayTime;
 
 void setup() {
-  // Serial port for debugging purposes
   Serial.begin(115200);
- 
-  // PIR Motion Sensor mode INPUT_PULLUP
-  pinMode(motionSensor, INPUT_PULLUP);
-  // Set motionSensor pin as interrupt, assign interrupt function and set RISING mode
-  attachInterrupt(digitalPinToInterrupt(motionSensor), detectsMovement, RISING);
+  Wire.begin();
+  aht.begin();
+  Serial.println(F("BME280 test"));
 
-  // Set LED to LOW
-  pinMode(led, OUTPUT);
-  digitalWrite(led, HIGH);
+  bool status;
+
+  // default settings
+  // (you can also pass in a Wire library object like &Wire2)
+
+
+  Serial.println("-- Default Test --");
+  delayTime = 1000;
+
+  Serial.println();
 }
 
+
 void loop() {
-  // Current time
-  now = millis();
-  if((digitalRead(led) == LOW) && (motion == false)) {
-    Serial.println("MOTION DETECTED!!!");
-    motion = true;
-  }
-  // Turn off the LED after the number of seconds defined in the timeSeconds variable
-  if(startTimer && (now - lastTrigger > (timeSeconds*1000))) {
-    Serial.println("Motion stopped...");
-    digitalWrite(led, HIGH);
-    startTimer = false;
-    motion = false;
-  }
+  sensors_event_t humidity, temp;
+  aht.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data
+  Serial.print("Temperature: "); Serial.print(temp.temperature); Serial.println(" degrees C");
+  Serial.print("Humidity: "); Serial.print(humidity.relative_humidity); Serial.println("% rH");
+
+  delay(5000);
 }
